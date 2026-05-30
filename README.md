@@ -11,7 +11,7 @@ Part of the [unpins](https://unpins.org) project — native single-binary builds
 
 ## Usage
 
-The package ships one executable, `grep`. `unpin install` materializes `egrep` and `fgrep` shims next to it; GNU grep dispatches its mode from argv[0] (`-E` and `-F` respectively), so the aliases work without a separate binary. You can also invoke them directly:
+The package ships one executable, `grep`. `unpin grep` materializes `egrep` and `fgrep` shims next to it; GNU grep dispatches its mode from argv[0] (`-E` and `-F` respectively), so the aliases work without a separate binary. You can also invoke them directly:
 
 ```bash
 grep -E 'foo|bar' file.txt    # same as: egrep
@@ -41,6 +41,10 @@ nix build github:unpins/grep
 ```
 
 The first invocation will offer to add the [unpins.cachix.org](https://unpins.cachix.org) substituter so most pulls come pre-built.
+
+## Man pages
+
+`grep.1` is embedded in the binary — read with `unpin man grep`. `egrep` and `fgrep` share it; they're argv[0] modes of the same tool, not separate pages.
 
 ## Manual download
 
