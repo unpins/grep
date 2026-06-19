@@ -20,11 +20,12 @@
             {
               char const *b__ = argv[0];
               for (char const *p__ = argv[0]; *p__; p__++)
-                if (*p__ == '/') b__ = p__ + 1;
+                if (*p__ == '/' || *p__ == '\\') b__ = p__ + 1;
               idx_t bl__ = strlen (b__);
-              if (bl__ >= 5 && STREQ (b__ + bl__ - 5, "egrep"))
+              if (bl__ > 4 && STREQ (b__ + bl__ - 4, ".exe")) bl__ -= 4;
+              if (bl__ >= 5 && memcmp (b__ + bl__ - 5, "egrep", 5) == 0)
                 matcher = setmatcher ("egrep", matcher);
-              else if (bl__ >= 5 && STREQ (b__ + bl__ - 5, "fgrep"))
+              else if (bl__ >= 5 && memcmp (b__ + bl__ - 5, "fgrep", 5) == 0)
                 matcher = setmatcher ("fgrep", matcher);
             }
         INC
@@ -49,7 +50,7 @@
       build = pkgs:
         let
           prepared = pkgs.pkgsStatic.gnugrep.overrideAttrs (old: {
-            postPatch = (old.postPatch or "") + restoreArgv0Dispatch;
+            postPatch = (if (old.postPatch or null) == null then "" else old.postPatch) + restoreArgv0Dispatch;
             postInstall = (old.postInstall or "") + ''
               rm -f "$out/bin/egrep" "$out/bin/fgrep"
             '';
@@ -67,7 +68,7 @@
           cross = unpins-lib.lib.mingwStaticCross pkgs;
           patched = cross.gnugrep.overrideAttrs (old: {
             NIX_LDFLAGS = (old.NIX_LDFLAGS or "") + " -lbcrypt";
-            postPatch = (old.postPatch or "") + restoreArgv0Dispatch;
+            postPatch = (if (old.postPatch or null) == null then "" else old.postPatch) + restoreArgv0Dispatch;
             postInstall = (old.postInstall or "") + ''
               rm -f "$out/bin/egrep" "$out/bin/fgrep"
             '';
