@@ -8,25 +8,48 @@
 
   inputs.unpins-lib.url = "github:unpins/nix-lib";
 
-  # pkgsStatic.gnugrep ships bin/grep as ELF plus bin/{egrep,fgrep} as 1-line
-  # shell wrappers (`exec /nix/store/...-grep -E "$@"`). The wrappers hardcode
-  # the nix-store path of grep so they break the second the closure isn't
-  # present on the user's machine.
-  #
-  # GNU grep dispatches its mode from argv[0]: if the basename ends in `egrep`
-  # or `fgrep`, it implies `-E` / `-F`. So we drop the wrappers and register
-  # the names as UNPIN_META aliases; `unpin install grep` materialises them as
-  # argv[0]-shims that re-exec the grep binary with the original name preserved.
   outputs = { self, unpins-lib }:
+    let
+      # GNU grep 3.x dropped argv[0] mode dispatch (egrep/fgrep ship as
+      # scripts that exec `grep -E`/`-F`). We drop those scripts and ship the
+      # names as aliases, so restore the dispatch in the binary: invoked as
+      # *egrep/*fgrep, imply -E/-F.
+      restoreArgv0Dispatch = ''
+        cat > grep-argv0.inc <<'INC'
+          if (argv[0])
+            {
+              char const *b__ = argv[0];
+              for (char const *p__ = argv[0]; *p__; p__++)
+                if (*p__ == '/') b__ = p__ + 1;
+              idx_t bl__ = strlen (b__);
+              if (bl__ >= 5 && STREQ (b__ + bl__ - 5, "egrep"))
+                matcher = setmatcher ("egrep", matcher);
+              else if (bl__ >= 5 && STREQ (b__ + bl__ - 5, "fgrep"))
+                matcher = setmatcher ("fgrep", matcher);
+            }
+        INC
+        sed -i '/initialize_main (&argc, &argv);/r grep-argv0.inc' src/grep.c
+        rm grep-argv0.inc
+      '';
+    in
     unpins-lib.lib.mkStandaloneFlake {
       inherit self;
       name = "grep";
       pkgsAttr = "gnugrep";
       smoke = [ "--version" ];
       smokePattern = "GNU grep";
+      engine = "unpin-llvm";
+      multicall = {
+        inferLinkInputs = true;
+        programs = [{
+          name = "grep";
+          aliases = [ "egrep" "fgrep" ];
+        }];
+      };
       build = pkgs:
         let
           prepared = pkgs.pkgsStatic.gnugrep.overrideAttrs (old: {
+            postPatch = (old.postPatch or "") + restoreArgv0Dispatch;
             postInstall = (old.postInstall or "") + ''
               rm -f "$out/bin/egrep" "$out/bin/fgrep"
             '';
@@ -38,16 +61,13 @@
             aliases = [ "egrep" "fgrep" ];
           }
           prepared;
-      # Same gnulib-getrandom / BCryptGenRandom missing -lbcrypt issue as
-      # sed cross-mingw. Plus egrep/fgrep wrappers (shell scripts pointing
-      # at the nix-store grep path) are dropped — withAliases re-creates
-      # the names as UNPIN_META aliases that argv[0]-dispatch back to
-      # grep.exe.
+      # -lbcrypt: gnulib getrandom needs BCryptGenRandom (same as sed cross-mingw).
       windowsBuild = pkgs:
         let
           cross = unpins-lib.lib.mingwStaticCross pkgs;
           patched = cross.gnugrep.overrideAttrs (old: {
             NIX_LDFLAGS = (old.NIX_LDFLAGS or "") + " -lbcrypt";
+            postPatch = (old.postPatch or "") + restoreArgv0Dispatch;
             postInstall = (old.postInstall or "") + ''
               rm -f "$out/bin/egrep" "$out/bin/fgrep"
             '';
