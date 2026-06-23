@@ -42,6 +42,15 @@
       engine = "unpin-llvm";
       multicall = {
         inferLinkInputs = true;
+        # Also fold into the Windows (mingw PE32+) mega: build the windows
+        # artifact through the unpin-llvm engine and emit a bitcode module.
+        # Validated end-to-end (engine cross-build → PE32+ + module.bc; the
+        # grep+sed mega runs grep/egrep/fgrep on a real Windows host).
+        windows = true;
+        # Also fold into the darwin (Mach-O) mega: engine cross-build from linux
+        # emits a darwin bitcode module (1 external unpin__grep__grep_main),
+        # validated running on macOS. The mega links it via ld64.lld.
+        darwin = true;
         programs = [{
           name = "grep";
           aliases = [ "egrep" "fgrep" ];
@@ -62,6 +71,17 @@
             aliases = [ "egrep" "fgrep" ];
           }
           prepared;
+      # darwin module build: same restoreArgv0Dispatch as native/windows so
+      # egrep/fgrep imply -E/-F inside the mega. `pkgs` is the engine+static
+      # darwin cross set (darwinStaticCross already applied), so reach the static
+      # gnugrep directly — no pkgsStatic/mingwStaticCross wrapper here.
+      darwinBuild = pkgs:
+        pkgs.gnugrep.overrideAttrs (old: {
+          postPatch = (if (old.postPatch or null) == null then "" else old.postPatch) + restoreArgv0Dispatch;
+          postInstall = (old.postInstall or "") + ''
+            rm -f "$out/bin/egrep" "$out/bin/fgrep"
+          '';
+        });
       # -lbcrypt: gnulib getrandom needs BCryptGenRandom (same as sed cross-mingw).
       windowsBuild = pkgs:
         let
