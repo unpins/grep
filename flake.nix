@@ -10,10 +10,9 @@
 
   outputs = { self, unpins-lib }:
     let
-      # GNU grep 3.x dropped argv[0] mode dispatch (egrep/fgrep ship as
-      # scripts that exec `grep -E`/`-F`). We drop those scripts and ship the
-      # names as aliases, so restore the dispatch in the binary: invoked as
-      # *egrep/*fgrep, imply -E/-F.
+      # GNU grep 3.x dropped argv[0] dispatch — egrep/fgrep became wrapper
+      # scripts. We ship them as aliases, so re-add it: invoked as
+      # *egrep/*fgrep ⇒ -E/-F.
       restoreArgv0Dispatch = ''
         cat > grep-argv0.inc <<'INC'
           if (argv[0])
@@ -42,14 +41,7 @@
       engine = "unpin-llvm";
       multicall = {
         inferLinkInputs = true;
-        # Also fold into the Windows (mingw PE32+) mega: build the windows
-        # artifact through the unpin-llvm engine and emit a bitcode module.
-        # Validated end-to-end (engine cross-build → PE32+ + module.bc; the
-        # grep+sed mega runs grep/egrep/fgrep on a real Windows host).
         windows = true;
-        # Also fold into the darwin (Mach-O) mega: engine cross-build from linux
-        # emits a darwin bitcode module (1 external unpin__grep__grep_main),
-        # validated running on macOS. The mega links it via ld64.lld.
         darwin = true;
         programs = [{
           name = "grep";
@@ -71,10 +63,8 @@
             aliases = [ "egrep" "fgrep" ];
           }
           prepared;
-      # darwin module build: same restoreArgv0Dispatch as native/windows so
-      # egrep/fgrep imply -E/-F inside the mega. `pkgs` is the engine+static
-      # darwin cross set (darwinStaticCross already applied), so reach the static
-      # gnugrep directly — no pkgsStatic/mingwStaticCross wrapper here.
+      # darwin: `pkgs` is already the static darwin set, so reach gnugrep
+      # directly (no pkgsStatic wrapper).
       darwinBuild = pkgs:
         pkgs.gnugrep.overrideAttrs (old: {
           postPatch = (if (old.postPatch or null) == null then "" else old.postPatch) + restoreArgv0Dispatch;
