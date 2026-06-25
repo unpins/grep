@@ -42,7 +42,6 @@
       multicall = {
         inferLinkInputs = true;
         windows = true;
-        darwin = true;
         programs = [{
           name = "grep";
           aliases = [ "egrep" "fgrep" ];
