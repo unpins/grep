@@ -41,3 +41,12 @@ The first invocation will offer to add the [unpins.cachix.org](https://unpins.ca
 ## Manual download
 
 The [Releases](https://github.com/unpins/grep/releases) page has standalone binaries for manual download.
+
+## Build notes
+
+- **Platforms:** Linux, macOS, Windows.
+- **PCRE2:** `grep -P` (Perl-compatible regexes) works — libpcre2 is folded in statically.
+- **Aliases:** `egrep`/`fgrep` are `argv[0]`-dispatch names (GNU grep 3.x dropped the built-in dispatch and shipped shell wrappers; we re-add the dispatch in-source and drop the wrappers). Invoked as `egrep`/`fgrep`, grep selects `-E`/`-F`.
+- **Windows:** a single static `grep.exe` cross-compiled with mingw-w64 (linking `-lbcrypt` for gnulib's `getrandom`).
+- **Man pages:** `grep.1` is embedded; `egrep`/`fgrep` share it.
+- **Tests:** GNU grep's test suite runs on native builds (0 failures under static-musl) and auto-skips on cross targets the build host can't execute.

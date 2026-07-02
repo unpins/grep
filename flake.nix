@@ -49,6 +49,11 @@
       build = pkgs:
         let
           prepared = pkgs.pkgsStatic.gnugrep.overrideAttrs (old: {
+            # Run GNU grep's test suite on native runners (0 failures under
+            # static-musl); auto-skips on crosses the build host can't execute.
+            doCheck = pkgs.pkgsStatic.gnugrep.stdenv.buildPlatform.canExecute
+              pkgs.pkgsStatic.gnugrep.stdenv.hostPlatform;
+            nativeCheckInputs = (old.nativeCheckInputs or [ ]) ++ [ pkgs.buildPackages.perl ];
             postPatch = (if (old.postPatch or null) == null then "" else old.postPatch) + restoreArgv0Dispatch;
             postInstall = (old.postInstall or "") + ''
               rm -f "$out/bin/egrep" "$out/bin/fgrep"
