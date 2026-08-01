@@ -60,12 +60,7 @@
             '';
           });
         in
-        unpins-lib.lib.withAliases pkgs
-          {
-            primary = "grep";
-            aliases = [ "egrep" "fgrep" ];
-          }
-          prepared;
+        prepared;
       # darwin: `pkgs` is already the static darwin set, so reach gnugrep
       # directly (no pkgsStatic wrapper).
       darwinBuild = pkgs:
@@ -87,11 +82,6 @@
             '';
           });
         in
-        unpins-lib.lib.withAliases pkgs
-          {
-            primary = "grep.exe";
-            aliases = [ "egrep" "fgrep" ];
-          }
-          patched;
+        patched;
     };
 }
