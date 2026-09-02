@@ -27,7 +27,7 @@ unpin install grep
 
 ## Man pages
 
-`grep.1` is embedded in the binary — read with `unpin man grep`. `egrep` and `fgrep` share it; they're the same tool under different names, not separate pages.
+`grep.1` is embedded in the binary — read with `unpin man grep`. `egrep` and `fgrep` share it; they're the same program under different names, not separate pages.
 
 ## Build locally
 
