@@ -43,7 +43,9 @@
         windows = true;
         programs = [{
           name = "grep";
-          aliases = [ "egrep" "fgrep" ];
+          # GNU grep deprecated egrep/fgrep and dropped their pages with the
+          # deprecation; only grep.1 is installed.
+          aliases = [ { name = "egrep"; noMan = true; } { name = "fgrep"; noMan = true; } ];
         }];
       };
       build = pkgs:
