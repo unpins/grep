@@ -63,15 +63,6 @@
           });
         in
         prepared;
-      # darwin: `pkgs` is already the static darwin set, so reach gnugrep
-      # directly (no pkgsStatic wrapper).
-      darwinBuild = pkgs:
-        pkgs.gnugrep.overrideAttrs (old: {
-          postPatch = (if (old.postPatch or null) == null then "" else old.postPatch) + restoreArgv0Dispatch;
-          postInstall = (old.postInstall or "") + ''
-            rm -f "$out/bin/egrep" "$out/bin/fgrep"
-          '';
-        });
       # -lbcrypt: gnulib getrandom needs BCryptGenRandom (same as sed cross-mingw).
       windowsBuild = pkgs:
         let
