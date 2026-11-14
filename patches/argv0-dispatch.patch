@@ -1,0 +1,27 @@
+Select -E/-F when invoked as egrep/fgrep.
+
+GNU grep 3.x dropped argv[0] dispatch: egrep and fgrep became wrapper
+scripts. We ship them as aliases of the one binary, so re-add it: a
+basename ending in egrep/fgrep (optionally .exe) selects -E/-F.
+
+--- a/src/grep.c
++++ b/src/grep.c
+@@ -2476,6 +2476,18 @@
+   FILE *fp;
+   exit_failure = EXIT_TROUBLE;
+   initialize_main (&argc, &argv);
++  if (argv[0])
++    {
++      char const *b__ = argv[0];
++      for (char const *p__ = argv[0]; *p__; p__++)
++        if (*p__ == '/' || *p__ == '\\') b__ = p__ + 1;
++      idx_t bl__ = strlen (b__);
++      if (bl__ > 4 && STREQ (b__ + bl__ - 4, ".exe")) bl__ -= 4;
++      if (bl__ >= 5 && memcmp (b__ + bl__ - 5, "egrep", 5) == 0)
++        matcher = setmatcher ("egrep", matcher);
++      else if (bl__ >= 5 && memcmp (b__ + bl__ - 5, "fgrep", 5) == 0)
++        matcher = setmatcher ("fgrep", matcher);
++    }
+ 
+   /* Which command-line options have been specified for filename output.
+      -1 for -h, 1 for -H, 0 for neither.  */
