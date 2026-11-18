@@ -40,10 +40,14 @@
         in
         prepared;
       # -lbcrypt: gnulib getrandom needs BCryptGenRandom (same as sed cross-mingw).
+      # pkg-config: without it configure falls back to a bare `-lpcre2-8` link
+      # probe, which on mingw misses `-DPCRE2_STATIC` (only the .pc carries it),
+      # references `__imp_pcre2_compile_8`, fails, and grep ships without -P.
       windowsBuild = pkgs:
         let
           cross = unpins-lib.lib.mingwStaticCross pkgs;
           patched = cross.gnugrep.overrideAttrs (old: {
+            nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ cross.buildPackages.pkg-config ];
             NIX_LDFLAGS = (old.NIX_LDFLAGS or "") + " -lbcrypt";
             patches = (old.patches or [ ]) ++ [ ./patches/argv0-dispatch.patch ];
             postInstall = (old.postInstall or "") + ''
