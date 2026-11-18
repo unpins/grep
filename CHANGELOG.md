@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `grep -P` works on Windows. The Windows binary had been built without
+  Perl-compatible regex support, so `-P` failed there.
+
 ## [3.12-2] - 2026-09-26
 
 ### Changed
